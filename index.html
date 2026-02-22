@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Grocery List">
+  <meta name="theme-color" content="#2e7d32">
+  <title>Family Grocery List</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+    @media all and (display-mode: standalone) {
+      body { padding-top: env(safe-area-inset-top); }
+      .footer { padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+    }
+    body {
+      font-family: 'DM Sans', 'Segoe UI', sans-serif;
+      background: #fafaf7; min-height: 100vh;
+      max-width: 520px; margin: 0 auto; padding-bottom: 140px;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #2e7d32, #43a047);
+      padding: 20px 20px 16px; color: #fff;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .title { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    .subtitle { font-size: 12px; opacity: 0.85; margin-top: 3px; }
+    .refresh-btn {
+      background: rgba(255,255,255,0.2); border: none; color: #fff;
+      font-size: 20px; width: 38px; height: 38px; border-radius: 10px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.4s;
+    }
+    .refresh-btn.spinning { transform: rotate(360deg); }
+
+    .stats-bar {
+      display: flex; align-items: center;
+      background: rgba(255,255,255,0.15); border-radius: 12px; padding: 10px 0;
+    }
+    .stat { flex: 1; text-align: center; }
+    .stat-num { font-size: 18px; font-weight: 700; display: block; }
+    .stat-label { font-size: 10px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-divider { width: 1px; height: 26px; background: rgba(255,255,255,0.25); }
+
+    .add-section { padding: 12px 16px 10px; background: #fff; border-bottom: 1px solid #eee; }
+    .add-row { display: flex; gap: 8px; align-items: center; }
+    .add-input {
+      flex: 1; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px;
+      font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s;
+    }
+    .add-input:focus { border-color: #43a047; }
+    .cat-select {
+      padding: 10px 6px; border: 2px solid #e0e0e0; border-radius: 10px;
+      font-size: 12px; background: #fff; font-family: inherit; outline: none; max-width: 105px;
+    }
+    .add-btn {
+      width: 42px; height: 42px; border-radius: 10px; border: none;
+      background: #2e7d32; color: #fff; font-size: 24px; font-weight: 700;
+      cursor: pointer; flex-shrink: 0; transition: background 0.2s;
+    }
+    .add-btn:active { background: #1b5e20; }
+
+    .filter-bar { display: flex; gap: 6px; padding: 10px 16px; background: #fff; border-bottom: 1px solid #eee; }
+    .filter-tab {
+      flex: 1; padding: 7px 0; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      background: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: inherit; color: #666; transition: all 0.2s;
+    }
+    .filter-tab.active { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+
+    .list-area { padding: 8px 16px; }
+    .cat-group { margin-bottom: 10px; }
+    .cat-header { display: flex; align-items: center; gap: 7px; padding: 8px 0 4px; }
+    .cat-icon { font-size: 15px; }
+    .cat-name { font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cat-count { font-size: 10px; background: #e8e8e8; color: #666; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+
+    .item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; background: #fff; border-radius: 10px;
+      margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      transition: all 0.25s; animation: fadeIn 0.3s ease;
+    }
+    .item-row.picked { background: #f0f7f0; opacity: 0.7; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .checkbox {
+      width: 28px; height: 28px; border-radius: 8px; border: 2px solid #ccc;
+      background: #fff; cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; font-weight: 700; color: #fff;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .checkbox.checked { background: #4caf50; border-color: #4caf50; }
+
+    .item-name { font-size: 15px; font-weight: 500; color: #333; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-name.picked { text-decoration: line-through; color: #999; }
+
+    .amount-wrap { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+    .currency { font-size: 12px; color: #888; font-weight: 600; }
+    .amount-input {
+      width: 58px; padding: 6px 7px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      font-size: 14px; text-align: right; outline: none; font-family: inherit;
+      background: #fafafa; transition: border-color 0.2s;
+    }
+    .amount-input:focus { border-color: #4caf50; background: #fff; }
+
+    .delete-btn {
+      width: 26px; height: 26px; border-radius: 6px; border: none;
+      background: transparent; color: #ccc; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .delete-btn:active { color: #ef5350; }
+
+    .empty { text-align: center; padding: 60px 20px; }
+    .empty-icon { font-size: 48px; }
+    .empty-text { color: #999; font-size: 15px; margin-top: 12px; }
+
+    .footer {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 520px; background: #fff;
+      border-top: 1px solid #e0e0e0; padding: 12px 20px 16px;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100;
+    }
+    .total-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .total-label { font-size: 13px; color: #666; }
+    .total-val { font-size: 15px; font-weight: 600; color: #2e7d32; }
+    .total-line.grand .total-label { font-weight: 700; font-size: 14px; }
+    .total-line.grand .total-val { font-weight: 700; font-size: 18px; }
+    .footer-actions { display: flex; gap: 8px; margin-top: 8px; }
+    .footer-btn {
+      flex: 1; padding: 9px 0; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      background: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: inherit; color: #666; transition: all 0.2s;
+    }
+    .footer-btn.danger { border-color: #ef5350; color: #ef5350; }
+    .footer-btn:active { opacity: 0.7; }
+
+    .loading-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255,255,255,0.92); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; z-index: 999;
+    }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e0e0e0; border-top-color: #2e7d32; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { color: #888; margin-top: 14px; font-size: 14px; }
+
+    .setup-box {
+      max-width: 440px; margin: 60px auto; padding: 30px 24px; background: #fff;
+      border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); text-align: center;
+    }
+    .setup-box h2 { font-size: 20px; color: #2e7d32; margin-bottom: 12px; }
+    .setup-box p { font-size: 14px; color: #555; margin-bottom: 16px; line-height: 1.5; }
+    .setup-box input {
+      width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px;
+      font-size: 14px; font-family: inherit; outline: none; margin-bottom: 12px;
+    }
+    .setup-box input:focus { border-color: #43a047; }
+    .setup-box button {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      background: #2e7d32; color: #fff; font-size: 15px; font-weight: 700;
+      cursor: pointer; font-family: inherit;
+    }
+    .setup-box button:active { background: #1b5e20; }
+    .setup-box .error { color: #d32f2f; font-size: 13px; margin-top: 8px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- Setup Screen (shown only first time) -->
+<div id="setupScreen" class="hidden">
+  <div class="setup-box">
+    <h2>&#x1F6D2; Setup Grocery List</h2>
+    <p>Paste your Google Apps Script Web App URL below.<br>This is a one-time setup.</p>
+    <input type="url" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
+    <button onclick="saveApiUrl()">Connect</button>
+    <div id="setupError" class="error hidden"></div>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay hidden">
+  <div class="spinner"></div>
+  <p class="loading-text">Loading grocery list...</p>
+</div>
+
+<!-- Main App -->
+<div id="mainApp" class="hidden">
+
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="title">&#x1F6D2; Grocery List</div>
+        <div class="subtitle">Shared family shopping list</div>
+      </div>
+      <button class="refresh-btn" onclick="refreshList()" title="Refresh">&#x21BB;</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat">
+        <span class="stat-num" id="pendingCount">0</span>
+        <span class="stat-label">To Buy</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num" id="pickedCount" style="color:#a5d6a7">0</span>
+        <span class="stat-label">Picked</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <span class="stat-num" id="totalSR" style="color:#ffcc80">SR 0</span>
+        <span class="stat-label">Total</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="add-section">
+    <div class="add-row">
+      <input type="text" id="newItem" class="add-input" placeholder="Add item..." onkeydown="if(event.key==='Enter')addItem()">
+      <select id="newCat" class="cat-select">
+        <option>Fruits &amp; Veg</option>
+        <option>Dairy &amp; Eggs</option>
+        <option>Meat &amp; Fish</option>
+        <option selected>Other</option>
+      </select>
+      <button class="add-btn" onclick="addItem()">+</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-tab active" data-filter="all" onclick="setFilter('all', this)">All</button>
+    <button class="filter-tab" data-filter="pending" onclick="setFilter('pending', this)">To Buy</button>
+    <button class="filter-tab" data-filter="picked" onclick="setFilter('picked', this)">Picked</button>
+  </div>
+
+  <div class="list-area" id="listArea"></div>
+
+  <div class="footer hidden" id="footer">
+    <div class="total-line">
+      <span class="total-label">Picked Total:</span>
+      <span class="total-val" id="pickedTotal">SR 0</span>
+    </div>
+    <div class="total-line grand">
+      <span class="total-label">Grand Total:</span>
+      <span class="total-val" id="grandTotal">SR 0</span>
+    </div>
+    <div class="footer-actions">
+      <button class="footer-btn" id="clearPickedBtn" onclick="clearPicked()">Clear Picked</button>
+      <button class="footer-btn danger" onclick="clearAll()">Clear All</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---- CONFIG ----
+  var API_URL = "";
+  var STORAGE_KEY = "grocery_api_url";
+
+  var items = [];
+  var currentFilter = "all";
+  var debounceTimers = {};
+
+  var catIcons = { "Fruits & Veg": "🥬", "Dairy & Eggs": "🥛", "Meat & Fish": "🥩", "Other": "📦" };
+  var catOrder = ["Fruits & Veg", "Dairy & Eggs", "Meat & Fish", "Other"];
+
+  // ---- API HELPER ----
+  function apiCall(action, params) {
+    var url = new URL(API_URL);
+    url.searchParams.set("action", action);
+    if (params) {
+      Object.keys(params).forEach(function (k) {
+        url.searchParams.set(k, params[k]);
+      });
+    }
+    return fetch(url.toString(), { redirect: "follow" })
+      .then(function (r) { return r.json(); });
+  }
+
+  // ---- SETUP ----
+  function checkSetup() {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      API_URL = saved;
+      showApp();
+    } else {
+      document.getElementById("setupScreen").classList.remove("hidden");
+    }
+  }
+
+  function saveApiUrl() {
+    var url = document.getElementById("apiUrlInput").value.trim();
+    var errEl = document.getElementById("setupError");
+    errEl.classList.add("hidden");
+
+    if (!url || !url.startsWith("https://script.google.com/")) {
+      errEl.textContent = "Please enter a valid Apps Script URL starting with https://script.google.com/";
+      errEl.classList.remove("hidden");
+      return;
+    }
+
+    errEl.textContent = "Testing connection...";
+    errEl.style.color = "#2e7d32";
+    errEl.classList.remove("hidden");
+
+    API_URL = url;
+    apiCall("getItems")
+      .then(function (data) {
+        if (data && data.success) {
+          localStorage.setItem(STORAGE_KEY, url);
+          showApp();
+        } else {
+          errEl.style.color = "#d32f2f";
+          errEl.textContent = "Connected but got unexpected response. Check your Code.gs.";
+        }
+      })
+      .catch(function () {
+        errEl.style.color = "#d32f2f";
+        errEl.textContent = "Cannot connect. Make sure the web app is deployed with 'Anyone' access.";
+      });
+  }
+
+  function showApp() {
+    document.getElementById("setupScreen").classList.add("hidden");
+    document.getElementById("mainApp").classList.remove("hidden");
+    document.getElementById("loadingOverlay").classList.remove("hidden");
+    loadItems();
+  }
+
+  // ---- LOAD ITEMS ----
+  function loadItems() {
+    apiCall("getItems")
+      .then(function (data) {
+        items = (data && data.items) ? data.items : [];
+        render();
+        document.getElementById("loadingOverlay").classList.add("hidden");
+      })
+      .catch(function () {
+        document.getElementById("loadingOverlay").classList.add("hidden");
+        alert("Failed to load. Check your internet connection.");
+      });
+  }
+
+  function refreshList() {
+    var btn = document.querySelector(".refresh-btn");
+    btn.classList.add("spinning");
+    apiCall("getItems")
+      .then(function (data) {
+        items = (data && data.items) ? data.items : [];
+        render();
+        setTimeout(function () { btn.classList.remove("spinning"); }, 400);
+      })
+      .catch(function () {
+        setTimeout(function () { btn.classList.remove("spinning"); }, 400);
+      });
+  }
+
+  // ---- ADD ITEM ----
+  function addItem() {
+    var input = document.getElementById("newItem");
+    var name = input.value.trim();
+    if (!name) return;
+    var cat = document.getElementById("newCat").value;
+    input.value = "";
+
+    var tempId = "t_" + Date.now();
+    items.push({ id: tempId, name: name, category: cat, amount: "", picked: false });
+    render();
+
+    apiCall("addItem", { name: encodeURIComponent(name), category: encodeURIComponent(cat) })
+      .then(function (r) {
+        if (r && r.success) {
+          var it = items.find(function (i) { return i.id === tempId; });
+          if (it) it.id = r.id;
+        }
+      });
+  }
+
+  // ---- TOGGLE PICKED ----
+  function togglePicked(id) {
+    var item = items.find(function (i) { return i.id === id; });
+    if (!item) return;
+    item.picked = !item.picked;
+    render();
+    apiCall("togglePicked", { id: id });
+  }
+
+  // ---- UPDATE AMOUNT ----
+  function onAmountChange(id, value) {
+    var item = items.find(function (i) { return i.id === id; });
+    if (item) item.amount = value === "" ? "" : parseFloat(value) || 0;
+    updateStats();
+
+    if (debounceTimers[id]) clearTimeout(debounceTimers[id]);
+    debounceTimers[id] = setTimeout(function () {
+      apiCall("updateAmount", { id: id, amount: value === "" ? "" : parseFloat(value) || 0 });
+    }, 800);
+  }
+
+  // ---- DELETE ----
+  function deleteItem(id) {
+    items = items.filter(function (i) { return i.id !== id; });
+    render();
+    apiCall("deleteItem", { id: id });
+  }
+
+  // ---- CLEAR PICKED ----
+  function clearPicked() {
+    var count = items.filter(function (i) { return i.picked; }).length;
+    if (count === 0) return;
+    if (!confirm("Remove " + count + " picked item(s)?")) return;
+    items = items.filter(function (i) { return !i.picked; });
+    render();
+    apiCall("clearPicked");
+  }
+
+  // ---- CLEAR ALL ----
+  function clearAll() {
+    if (items.length === 0) return;
+    if (!confirm("Remove ALL items?")) return;
+    items = [];
+    render();
+    apiCall("clearAll");
+  }
+
+  // ---- FILTER ----
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll(".filter-tab").forEach(function (t) { t.classList.remove("active"); });
+    btn.classList.add("active");
+    render();
+  }
+
+  // ---- RENDER ----
+  function render() {
+    var filtered = items.filter(function (i) {
+      if (currentFilter === "pending") return !i.picked;
+      if (currentFilter === "picked") return i.picked;
+      return true;
+    });
+
+    var grouped = {};
+    filtered.forEach(function (i) {
+      if (!grouped[i.category]) grouped[i.category] = [];
+      grouped[i.category].push(i);
+    });
+
+    var html = "";
+    if (filtered.length === 0) {
+      html = '<div class="empty"><div class="empty-icon">🧺</div><p class="empty-text">' +
+        (currentFilter === "all" ? "Your list is empty. Add some items!" : "No " + currentFilter + " items.") + "</p></div>";
+    } else {
+      catOrder.forEach(function (cat) {
+        if (!grouped[cat]) return;
+        html += '<div class="cat-group">';
+        html += '<div class="cat-header"><span class="cat-icon">' + (catIcons[cat] || "📦") + '</span>';
+        html += '<span class="cat-name">' + cat + '</span>';
+        html += '<span class="cat-count">' + grouped[cat].length + '</span></div>';
+        grouped[cat].forEach(function (item) {
+          var p = item.picked;
+          var av = (item.amount === "" || item.amount === 0) ? "" : item.amount;
+          html += '<div class="item-row' + (p ? " picked" : "") + '">';
+          html += '<div class="checkbox' + (p ? " checked" : "") + '" onclick="togglePicked(\'' + item.id + '\')">' + (p ? "✓" : "") + '</div>';
+          html += '<div class="item-name' + (p ? " picked" : "") + '">' + escHtml(item.name) + '</div>';
+          html += '<div class="amount-wrap"><span class="currency">SR</span>';
+          html += '<input type="number" inputmode="decimal" class="amount-input" value="' + av + '" placeholder="0" onchange="onAmountChange(\'' + item.id + '\',this.value)" oninput="onAmountChange(\'' + item.id + '\',this.value)"></div>';
+          html += '<button class="delete-btn" onclick="deleteItem(\'' + item.id + '\')">×</button>';
+          html += '</div>';
+        });
+        html += '</div>';
+      });
+    }
+
+    document.getElementById("listArea").innerHTML = html;
+    updateStats();
+    updateFilters();
+  }
+
+  function updateStats() {
+    var pending = items.filter(function (i) { return !i.picked; }).length;
+    var picked = items.filter(function (i) { return i.picked; }).length;
+    var total = items.reduce(function (s, i) { return s + (parseFloat(i.amount) || 0); }, 0);
+    var pickedAmt = items.filter(function (i) { return i.picked; }).reduce(function (s, i) { return s + (parseFloat(i.amount) || 0); }, 0);
+
+    document.getElementById("pendingCount").textContent = pending;
+    document.getElementById("pickedCount").textContent = picked;
+    document.getElementById("totalSR").textContent = "SR " + Math.round(total);
+    document.getElementById("pickedTotal").textContent = "SR " + Math.round(pickedAmt);
+    document.getElementById("grandTotal").textContent = "SR " + Math.round(total);
+
+    var footer = document.getElementById("footer");
+    if (items.length > 0) {
+      footer.classList.remove("hidden");
+      document.getElementById("clearPickedBtn").textContent = "Clear Picked (" + picked + ")";
+    } else {
+      footer.classList.add("hidden");
+    }
+  }
+
+  function updateFilters() {
+    var pending = items.filter(function (i) { return !i.picked; }).length;
+    var picked = items.filter(function (i) { return i.picked; }).length;
+    var tabs = document.querySelectorAll(".filter-tab");
+    tabs[0].textContent = "All (" + items.length + ")";
+    tabs[1].textContent = "To Buy (" + pending + ")";
+    tabs[2].textContent = "Picked (" + picked + ")";
+  }
+
+  function escHtml(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  // ---- SERVICE WORKER ----
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("./sw.js").catch(function () {});
+  }
+
+  // ---- START ----
+  checkSetup();
+</script>
+</body>
+</html>
