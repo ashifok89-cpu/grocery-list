@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,7 +15,8 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { overscroll-behavior: none; -webkit-overflow-scrolling: touch; }
+    html { overflow-x: hidden; width: 100%; }
+    html, body { overscroll-behavior: none; -webkit-overflow-scrolling: touch; overflow-x: hidden; }
     @media all and (display-mode: standalone) {
       body { padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
       .footer { padding-bottom: calc(16px + env(safe-area-inset-bottom)); padding-left: calc(24px + env(safe-area-inset-left)); padding-right: calc(24px + env(safe-area-inset-right)); }
@@ -26,12 +27,15 @@
       max-width: 520px; margin: 0 auto; padding-bottom: 140px;
       padding-left: env(safe-area-inset-left);
       padding-right: env(safe-area-inset-right);
+      overflow-x: hidden;
+      width: 100%;
     }
 
     .header {
       background: linear-gradient(135deg, #2e7d32, #43a047);
       padding: 16px 24px 14px; color: #fff;
       position: sticky; top: 0; z-index: 100;
+      overflow: hidden;
     }
     .header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
     .title { font-size: 19px; font-weight: 800; letter-spacing: -0.5px; }
@@ -53,17 +57,18 @@
     .stat-label { font-size: 9px; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.5px; }
     .stat-divider { width: 1px; height: 22px; background: rgba(255,255,255,0.25); }
 
-    .add-section { padding: 10px 20px 8px; background: #fff; border-bottom: 1px solid #eee; }
-    .add-row { display: flex; gap: 5px; align-items: center; }
+    .add-section { padding: 10px 20px 8px; background: #fff; border-bottom: 1px solid #eee; overflow: hidden; }
+    .add-row { display: flex; gap: 5px; align-items: center; max-width: 100%; }
     .add-input {
       flex: 1; padding: 8px 10px; border: 1.5px solid #e0e0e0; border-radius: 8px;
       font-size: 13px; font-family: inherit; outline: none; transition: border-color 0.2s;
-      min-width: 0;
+      min-width: 0; max-width: 100%;
     }
     .add-input:focus { border-color: #43a047; }
     .cat-select {
-      padding: 8px 3px; border: 1.5px solid #e0e0e0; border-radius: 8px;
-      font-size: 10px; background: #fff; font-family: inherit; outline: none; max-width: 80px; flex-shrink: 0;
+      padding: 8px 2px; border: 1.5px solid #e0e0e0; border-radius: 8px;
+      font-size: 10px; background: #fff; font-family: inherit; outline: none;
+      width: 75px; flex-shrink: 0;
     }
     .add-btn {
       width: 34px; height: 34px; border-radius: 8px; border: none;
@@ -92,6 +97,7 @@
       padding: 8px 10px; background: #fff; border-radius: 9px;
       margin-bottom: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       transition: all 0.25s; animation: fadeIn 0.3s ease;
+      overflow: hidden;
     }
     .item-row.picked { background: #f0f7f0; opacity: 0.7; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -132,6 +138,7 @@
       width: 100%; max-width: 520px; background: #fff;
       border-top: 1px solid #e0e0e0; padding: 10px 24px 14px;
       box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100;
+      overflow: hidden;
     }
     .total-line { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
     .total-label { font-size: 12px; color: #666; }
