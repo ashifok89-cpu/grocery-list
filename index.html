@@ -200,40 +200,10 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .loading-text { color: #888; margin-top: 14px; font-size: 14px; }
 
-    .setup-box {
-      max-width: 440px; margin: 60px auto; padding: 30px 24px; background: #fff;
-      border-radius: 16px; box-shadow: 0 2px 16px rgba(0,0,0,0.08); text-align: center;
-    }
-    .setup-box h2 { font-size: 20px; color: #2e7d32; margin-bottom: 12px; }
-    .setup-box p { font-size: 14px; color: #555; margin-bottom: 16px; line-height: 1.5; }
-    .setup-box input {
-      width: 100%; padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px;
-      font-size: 14px; font-family: inherit; outline: none; margin-bottom: 12px;
-    }
-    .setup-box input:focus { border-color: #43a047; }
-    .setup-box button {
-      width: 100%; padding: 12px; border: none; border-radius: 10px;
-      background: #2e7d32; color: #fff; font-size: 15px; font-weight: 700;
-      cursor: pointer; font-family: inherit;
-    }
-    .setup-box button:active { background: #1b5e20; }
-    .setup-box .error { color: #d32f2f; font-size: 13px; margin-top: 8px; }
-
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
-
-<!-- Setup Screen (shown only first time) -->
-<div id="setupScreen" class="hidden">
-  <div class="setup-box">
-    <h2>&#x1F6D2; Setup Grocery List</h2>
-    <p>Paste your Google Apps Script Web App URL below.<br>This is a one-time setup.</p>
-    <input type="url" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
-    <button onclick="saveApiUrl()">Connect</button>
-    <div id="setupError" class="error hidden"></div>
-  </div>
-</div>
 
 <!-- Loading Overlay -->
 <div id="loadingOverlay" class="loading-overlay hidden">
@@ -326,8 +296,7 @@
 
 <script>
   // ---- CONFIG ----
-  var API_URL = "";
-  var STORAGE_KEY = "grocery_api_url";
+  var API_URL = "https://script.google.com/macros/s/AKfycby_bNkz6vA5e0GEI8acQxKtXpvVu2BiDGfNgSgFi2USh6I3D_WwdfpFeDTP3tl66XEm5Q/exec";
 
   var items = [];
   var currentFilter = "all";
@@ -351,49 +320,10 @@
 
   // ---- SETUP ----
   function checkSetup() {
-    var saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      API_URL = saved;
-      showApp();
-    } else {
-      document.getElementById("setupScreen").classList.remove("hidden");
-    }
-  }
-
-  function saveApiUrl() {
-    var url = document.getElementById("apiUrlInput").value.trim();
-    var errEl = document.getElementById("setupError");
-    errEl.classList.add("hidden");
-
-    if (!url || !url.startsWith("https://script.google.com/")) {
-      errEl.textContent = "Please enter a valid Apps Script URL starting with https://script.google.com/";
-      errEl.classList.remove("hidden");
-      return;
-    }
-
-    errEl.textContent = "Testing connection...";
-    errEl.style.color = "#2e7d32";
-    errEl.classList.remove("hidden");
-
-    API_URL = url;
-    apiCall("getItems")
-      .then(function (data) {
-        if (data && data.success) {
-          localStorage.setItem(STORAGE_KEY, url);
-          showApp();
-        } else {
-          errEl.style.color = "#d32f2f";
-          errEl.textContent = "Connected but got unexpected response. Check your Code.gs.";
-        }
-      })
-      .catch(function () {
-        errEl.style.color = "#d32f2f";
-        errEl.textContent = "Cannot connect. Make sure the web app is deployed with 'Anyone' access.";
-      });
+    showApp();
   }
 
   function showApp() {
-    document.getElementById("setupScreen").classList.add("hidden");
     document.getElementById("mainApp").classList.remove("hidden");
     document.getElementById("loadingOverlay").classList.remove("hidden");
     loadItems();
