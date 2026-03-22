@@ -147,7 +147,7 @@
     }
     .checkbox.checked { background: #4caf50; border-color: #4caf50; }
 
-    .item-name { font-size: 13px; font-weight: 500; color: #333; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .item-name { font-size: 13px; font-weight: 500; color: #333; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
     .item-name.picked { text-decoration: line-through; color: #999; }
 
     .amount-wrap { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
@@ -248,7 +248,7 @@
   </div>
 
   <!-- Add Item Modal -->
-  <div class="modal-overlay hidden" id="addModal" onclick="closeModalOutside(event)">
+  <div class="modal-overlay hidden" id="addModal" onclick="closeModalOutside(event, 'addModal')">
     <div class="modal">
       <div class="modal-header">
         <span class="modal-title">Add Item</span>
@@ -268,6 +268,30 @@
         </select>
       </div>
       <button class="modal-add-btn" onclick="addItem()">Add to List</button>
+    </div>
+  </div>
+
+  <!-- Edit Item Modal -->
+  <div class="modal-overlay hidden" id="editModal" onclick="closeModalOutside(event, 'editModal')">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Edit Item</span>
+        <button class="modal-close" onclick="closeEditModal()">&#x2715;</button>
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Item Name</label>
+        <input type="text" id="editItemName" class="modal-input" placeholder="Item name..." onkeydown="if(event.key==='Enter')saveEdit()">
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">Category</label>
+        <select id="editItemCat" class="modal-select">
+          <option>Fruits &amp; Veg</option>
+          <option>Dairy &amp; Eggs</option>
+          <option>Meat &amp; Fish</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <button class="modal-add-btn" onclick="saveEdit()">Save Changes</button>
     </div>
   </div>
     <button class="filter-tab active" data-filter="all" onclick="setFilter('all', this)">All</button>
@@ -365,8 +389,46 @@
   function closeAddModal() {
     document.getElementById("addModal").classList.add("hidden");
   }
-  function closeModalOutside(e) {
-    if (e.target === document.getElementById("addModal")) closeAddModal();
+  function closeModalOutside(e, modalId) {
+    if (e.target === document.getElementById(modalId)) {
+      document.getElementById(modalId).classList.add("hidden");
+    }
+  }
+
+  // ---- EDIT ITEM MODAL ----
+  var editingItemId = null;
+  function openEditModal(id) {
+    var item = items.find(function(i) { return i.id === id; });
+    if (!item) return;
+    editingItemId = id;
+    document.getElementById("editItemName").value = item.name;
+    var catSelect = document.getElementById("editItemCat");
+    for (var i = 0; i < catSelect.options.length; i++) {
+      if (catSelect.options[i].text === item.category) {
+        catSelect.selectedIndex = i;
+        break;
+      }
+    }
+    document.getElementById("editModal").classList.remove("hidden");
+    setTimeout(function() { document.getElementById("editItemName").focus(); }, 300);
+  }
+  function closeEditModal() {
+    document.getElementById("editModal").classList.add("hidden");
+    editingItemId = null;
+  }
+  function saveEdit() {
+    if (!editingItemId) return;
+    var newName = document.getElementById("editItemName").value.trim();
+    if (!newName) return;
+    var newCat = document.getElementById("editItemCat").value;
+    var item = items.find(function(i) { return i.id === editingItemId; });
+    if (item) {
+      item.name = newName;
+      item.category = newCat;
+      render();
+    }
+    apiCall("updateItem", { id: editingItemId, name: encodeURIComponent(newName), category: encodeURIComponent(newCat) });
+    closeEditModal();
   }
 
   // ---- ADD ITEM ----
@@ -476,7 +538,7 @@
           var av = (item.amount === "" || item.amount === 0) ? "" : item.amount;
           html += '<div class="item-row' + (p ? " picked" : "") + '">';
           html += '<div class="checkbox' + (p ? " checked" : "") + '" onclick="togglePicked(\'' + item.id + '\')">' + (p ? "✓" : "") + '</div>';
-          html += '<div class="item-name' + (p ? " picked" : "") + '">' + escHtml(item.name) + '</div>';
+          html += '<div class="item-name' + (p ? " picked" : "") + '" onclick="openEditModal(\'' + item.id + '\')">' + escHtml(item.name) + '</div>';
           html += '<div class="amount-wrap"><span class="currency">SR</span>';
           html += '<input type="number" inputmode="decimal" class="amount-input" value="' + av + '" placeholder="0" onchange="onAmountChange(\'' + item.id + '\',this.value)" oninput="onAmountChange(\'' + item.id + '\',this.value)"></div>';
           html += '<button class="delete-btn" onclick="deleteItem(\'' + item.id + '\')">×</button>';
